@@ -1,0 +1,4 @@
+terraform init: Initializes a Terraform working directory by downloading required provider plugins, setting up the backend, and preparing the environment for further Terraform commands
+terraform plan: Generates and displays an execution plan, showing what changes Terraform will make to your infrastructure before actually applying them
+terraform apply: Executes the actions proposed in the Terraform plan and creates, modifies, or deletes infrastructure resources as required
+terraform destroy: Destroys all infrastructure resources managed by Terraform in the current workspace, removing everything defined in the configuration files
