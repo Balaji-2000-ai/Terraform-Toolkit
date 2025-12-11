@@ -1,0 +1,81 @@
+#main.tf: Configures the AWS provider and sets the region for Terraform operation
+provider "aws" {
+  region = "us-east-1"
+}
+
+#vars.tf: Defines all input variables used to parameterize the Terraform configuration
+variable "instance_name" {
+  type    = string
+  default = "Terraform-Server"
+}
+
+variable "instance_type" {
+  type    = bool
+  default = "true"
+}
+
+variable "ebs_volume" {
+  type    = number
+  default = 10
+}
+
+variable "instance_count" {
+  type    = number
+  default = 1
+}
+
+variable "ami_id" {
+  type    = string
+  default = "ami-08d7aabbb50c2c24e"
+}
+
+#resources.tf: 
+#Creates EC2 instances using the provided AMI, instance type, key pair, and security group
+resource "aws_instance" "myserver" {
+  tags = {
+    Name = var.instance_name
+    Env  = "Dev"
+  }
+
+  ami                    = var.ami_id
+  instance_type          = var.instance_type ? "t2.micro" : "t2.medium"
+  key_name               = "balaji-keypair"
+  vpc_security_group_ids = [aws_security_group.instance_sg.id]
+  availability_zone      = "us-east-1a"
+  root_block_device {
+    volume_size = var.ebs_volume
+  }
+  count = var.instance_count
+}
+
+#Creates a security group allowing SSH access, HTTP access, all inbound traffic and all outbound traffic
+resource "aws_security_group" "instance_sg" {
+  name = "my_security_group"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
