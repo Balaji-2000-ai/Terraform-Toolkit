@@ -1,4 +1,4 @@
-#Defines multiple AWS providers with different regions and uses provider aliases to create resources in specific regions
+#alias: Defines multiple AWS providers with different regions and uses provider aliases to create resources in specific regions
 
 provider "aws" {
   region = "us-east-1" #Sets the default AWS provider with region us-east-1. Resources without an explicit provider will be created in this region
@@ -42,6 +42,27 @@ resource "aws_instance" "third_instance" {
   }
   ami           = "ami-0c44f651ab5e9285f"
   instance_type = "t2.medium"
+}
+
+
+
+#output: Prints details of the EC2 instance after creation: Public IP address, Private IP address, Instance ID. 
+#This output is useful for referencing instance details without manually checking statefile
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_instance" "first_instance" {
+  tags = {
+    Name = "first_server"
+  }
+  ami           = "ami-08d7aabbb50c2c24e"
+  instance_type = "t2.medium"
+}
+
+output "priting_module" {
+  value = [aws_instance.first_instance.public_ip, aws_instance.first_instance.private_ip, aws_instance.first_instance.id]
 }
 
 ~    
