@@ -1,7 +1,7 @@
 #Defines multiple AWS providers with different regions and uses provider aliases to create resources in specific regions
 
 provider "aws" {
-  region = "us-east-1"
+  region = "us-east-1" #Sets the default AWS provider with region us-east-1. Resources without an explicit provider will be created in this region
 }
 
 provider "aws" {
