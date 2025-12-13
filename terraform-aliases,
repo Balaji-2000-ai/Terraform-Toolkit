@@ -1,0 +1,47 @@
+#Defines multiple AWS providers with different regions and uses provider aliases to create resources in specific regions
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+provider "aws" {
+  region = "ap-south-1"
+  alias  = "mumbai"
+}
+
+provider "aws" {
+  region = "ap-south-2"
+  alias  = "hyderabad"
+}
+
+
+
+resource "aws_instance" "first_instance" {
+  tags = {
+    Name = "first_server"
+  }
+  ami           = "ami-08d7aabbb50c2c24e"
+  instance_type = "t2.medium"
+}
+
+
+resource "aws_instance" "second_instance" {
+  provider = "aws.hyderabad"
+  tags = {
+    Name = "second_server"
+  }
+  ami           = "ami-05cbcb702a19619bd"
+  instance_type = "t3.micro"
+}
+
+
+resource "aws_instance" "third_instance" {
+  provider = "aws.mumbai"
+  tags = {
+    Name = "third_server"
+  }
+  ami           = "ami-0c44f651ab5e9285f"
+  instance_type = "t2.medium"
+}
+
+~    
