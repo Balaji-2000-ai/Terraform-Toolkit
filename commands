@@ -5,3 +5,4 @@ terraform apply --auto-approve: Applies the Terraform plan without asking for in
 terraform destroy: Destroys all infrastructure resources managed by Terraform in the current workspace, removing everything defined in the configuration files
 terraform fmt: Automatically formats all Terraform configuration files in the current directory to follow standard Terraform style conventions, improving readability and consistency
 aws configure: Interactively sets up your AWS CLI credentials and default settings. You will be prompted to enter:AWS Access Key ID, Secret Access Key, Default region name, Default output format
+terraform destroy --auto-approve --target=resource_name.label: Destroys only the specified Terraform resource without prompting for confirmation, leaving all other managed resources untouched
