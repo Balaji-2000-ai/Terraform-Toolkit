@@ -6,3 +6,8 @@ terraform destroy: Destroys all infrastructure resources managed by Terraform in
 terraform fmt: Automatically formats all Terraform configuration files in the current directory to follow standard Terraform style conventions, improving readability and consistency
 aws configure: Interactively sets up your AWS CLI credentials and default settings. You will be prompted to enter:AWS Access Key ID, Secret Access Key, Default region name, Default output format
 terraform destroy --auto-approve --target=resource_name.label: Destroys only the specified Terraform resource without prompting for confirmation, leaving all other managed resources untouched
+terraform workspace list: Displays all Terraform workspaces available in the current working directory, highlighting the currently active workspace
+terraform workspace new workspace_name: Creates a new Terraform workspace , allowing you to manage separate state files for different environments (such as dev, test, or prod)
+terraform workspace select default: Switches the current Terraform working context to the default workspace, making its state and resources active for subsequent Terraform operations
+terraform workspace delete workspace_name: Deletes the specified Terraform workspace, removing its state reference from the current working directory
+terraform state list: Lists all resources currently tracked in the Terraform state file for the active workspace
