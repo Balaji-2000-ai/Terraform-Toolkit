@@ -65,4 +65,27 @@ output "priting_module" {
   value = [aws_instance.first_instance.public_ip, aws_instance.first_instance.private_ip, aws_instance.first_instance.id]
 }
 
+
+#workspace: "terraform workspace new dev": Creates a new Terraform workspace named dev, allowing environment-specific infrastructure using separate state files
+#Using workspaces allows you to manage multiple environments (dev, test, prod) with the same Terraform code while keeping resources and state isolated
+
+terraform workspace new dev,
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_instance" "first_instance" {
+  tags = {
+    Name = "my-${terraform.workspace}-server" #Dynamically names the EC2 instance based on the active workspace
+  }
+  ami           = "ami-08d7aabbb50c2c24e"
+  instance_type = "t2.large"
+}
+
+#This output changes per workspace because each workspace maintains its own state and resources
+output "priting_module" {
+  value = [aws_instance.first_instance.public_ip, aws_instance.first_instance.private_ip, aws_instance.first_instance.id]
+}
+
 ~    
