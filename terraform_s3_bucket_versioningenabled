@@ -1,6 +1,6 @@
 #Defines AWS provider configuration and creates an S3 bucket with versioning enabled, which will be used to store the Terraform remote state
 #The S3 bucket must exist before configuring it as a Terraform backend, because Terraform cannot create its own backend automatically
-#awsbucket.tf:
+#awsbucket.tf:S3 bucket is created. Versioning is enabled
 provider "aws" {
   region = "us-east-1"
 }
@@ -18,11 +18,11 @@ resource "aws_s3_bucket_versioning" "versionenabling" {
 
 terraform init-> terraform plan-> terraform apply --auto-approve
 
-#main.tf:
+#main.tf: Terraform state is stored remotely in S3 in the path statefile/terraform.tfstate
 terraform {
   backend "s3" {
     bucket = "katukutibalaji.terraform.bucket"
-    key    = "statefile/terraform.tfstate"
+    key    = "statefile/terraform.tfstate" 
     region = "us-east-1"
   }
 }
