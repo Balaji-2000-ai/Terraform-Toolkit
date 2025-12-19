@@ -1,4 +1,5 @@
 #Defines AWS provider configuration and creates an S3 bucket with versioning enabled, which will be used to store the Terraform remote state
+#The S3 bucket must exist before configuring it as a Terraform backend, because Terraform cannot create its own backend automatically
 #awsbucket.tf:
 provider "aws" {
   region = "us-east-1"
