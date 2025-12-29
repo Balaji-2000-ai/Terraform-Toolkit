@@ -50,7 +50,7 @@ resource "aws_nat_gateway" "myng" {
   subnet_id     = aws_subnet.mysubnet1.id
   allocation_id = aws_eip.nat_eip.id
 
-  depends_on = [aws_internet_gateway.myigw]
+  depends_on = [aws_internet_gateway.myigw] #Sometimes Terraform needs an explicit dependency to avoid timing issues
 
   tags = {
     Name = "terraform-ng"
