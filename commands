@@ -12,3 +12,5 @@ terraform workspace select default: Switches the current Terraform working conte
 terraform workspace delete workspace_name: Deletes the specified Terraform workspace, removing its state reference from the current working directory
 terraform state list: Lists all resources currently tracked in the Terraform state file for the active workspace
 terraform apply -refresh-only: updates Terraform state to match the real infrastructure without creating, modifying, or destroying any resources
+terraform taint resource_name: Used to manually mark a resource as “dirty” so Terraform will destroy and recreate it on the next apply, even if the configuration hasn’t changed 
+terraform apply --auto-approve -replace="resource_name": Forces Terraform to destroy and recreate a specific resource in a single apply, replacing the deprecated terraform taint
