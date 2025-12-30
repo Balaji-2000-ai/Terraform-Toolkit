@@ -1,0 +1,16 @@
+#It tells Terraform: Do NOT allow this resource to be destroyed under any circumstances
+resource "aws_instance" "one" {
+  ami           = "ami-0e9bbd70d26d7cf4f"
+  instance_type = "t2.micro"
+  count         = 1
+
+  lifecycle {
+    prevent_destroy = true
+  }
+
+  tags = {
+    Name = "TF-Server"
+  }
+}
+
+
