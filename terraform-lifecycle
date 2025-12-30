@@ -1,4 +1,4 @@
-#It tells Terraform: Do NOT allow this resource to be destroyed under any circumstances
+#Tells Terraform: Do NOT allow this resource to be destroyed under any circumstances. It Protects resources
 resource "aws_instance" "one" {
   ami           = "ami-0e9bbd70d26d7cf4f"
   instance_type = "t2.micro"
@@ -6,6 +6,38 @@ resource "aws_instance" "one" {
 
   lifecycle {
     prevent_destroy = true
+  }
+
+  tags = {
+    Name = "TF-Server"
+  }
+}
+
+
+#Tells Terraform to create the new resource first, and only destroy the old one after the new one is ready. Gives Zero downtime
+resource "aws_instance" "one" {
+  ami           = "ami-0e9bbd70d26d7cf4f"
+  instance_type = "t2.micro"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = {
+    Name = "TF-Server"
+  }
+}
+
+
+
+#Ignore differences for specific attributes, preventing Terraform from updating or recreating the resource even if changes are detected. Ignores drift
+resource "aws_instance" "one" {
+  ami           = "ami-0e9bbd70d26d7cf4f"
+  instance_type = "t2.micro"
+  count         = 1
+
+  lifecycle {
+    ignore_changes = [instance_type, count, ami, tags]
   }
 
   tags = {
