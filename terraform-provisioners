@@ -1,0 +1,13 @@
+#local exec provisioner: Runs a command on the machine where Terraform itself is executed, not on the resource being created. It will run shell command locally after Terraform creates/updates a resource
+resource "aws_instance" "one" {
+  ami           = "ami_id"
+  instance_type = "t2.micro"
+
+  tags = {
+    Name = "Terraform-CS"
+  }
+
+  provisioner "local-exec" {
+    command = "echo 'Instance created with ID: ${self.id}' >> myInstance.txt"
+  }
+}
