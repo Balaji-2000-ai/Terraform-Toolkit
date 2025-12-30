@@ -11,3 +11,74 @@ resource "aws_instance" "one" {
     command = "echo 'Instance created with ID: ${self.id}' >> myInstance.txt"
   }
 }
+
+
+
+#remote exec provisioner: Allows Terraform to execute shell commands on a remote machine using SSH or WinRM after the resource is created
+resource "aws_key_pair" "myKey" {
+    key_name = "bala-keypair"
+    public_key = file("/root/.ssh/id_rsa.pub")
+}
+
+resource "aws_instance" "one" {
+  ami           = "ami-0e9bbd70d26d7cf4f"
+  instance_type = "t2.micro"
+  key_name      = aws_key_pair.myKey.key_name
+
+  tags = {
+    Name = "TF-Server"
+  }
+
+  # Wait for SSH properly
+  provisioner "remote-exec" {
+    connection {
+      type        = "ssh"
+      user        = "ec2-user"
+      private_key = file("~/.ssh/id_rsa")
+      host        = self.public_ip
+      timeout     = "5m"
+    }
+
+    inline = [
+      # Idempotent commands
+      "sudo yum install -y httpd || true",
+      "sudo systemctl enable httpd",
+      "sudo systemctl start httpd || true",
+
+      # Safe directory creation
+      "sudo mkdir -p /terraform-folder",
+      "sudo touch /myfile",
+
+      # App content
+      "echo '<h1>Hello from Terraform</h1>' | sudo tee /var/www/html/index.html"
+    ]
+  }
+}
+
+
+#file provisioner: Copies files or directories from your local machine to a remote resource (usually an EC2 instance) over SSH or WinRM
+resource "aws_key_pair" "myKey" {
+    key_name = "bala-keypair"
+    public_key = file("/root/.ssh/id_rsa.pub")
+}
+
+resource "aws_instance" "one" {
+    tags = {
+        Name = "TF-Server"
+    }
+    ami = "ami-0e9bbd70d26d7cf4f"
+    instance_type = "t2.micro"
+    count = 1
+    key_name = aws_key_pair.myKey.key_name
+    provisioner "file" {
+        connection {
+            type = "ssh"
+            user = "ec2-user"
+            private_key = file("/root/.ssh/id_rsa")
+            host = self.public_ip
+        }
+        source = "myInstance.txt"
+        destination = "myInstance.txt"
+    }
+}
+
