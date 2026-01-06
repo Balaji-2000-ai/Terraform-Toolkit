@@ -1,0 +1,11 @@
+# toset(var.abc) converts the list into a set. for_each iterates over each bucket name. Creates 3 separate S3 buckets, one per name
+resource "aws_s3_bucket" "mybucket" {
+  for_each = toset(var.abc)
+
+  bucket = each.value
+}
+
+variable "abc" {
+  type    = list(string)
+  default = ["balaji1.flm", "balaji2.flm", "balaji3.flm"]
+}
