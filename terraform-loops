@@ -9,3 +9,32 @@ variable "abc" {
   type    = list(string)
   default = ["balaji1.flm", "balaji2.flm", "balaji3.flm"]
 }
+
+
+
+
+
+resource "aws_instance" "myserver" {
+  count         = length(var.iname)
+  ami           = var.ami_ids[count.index]
+  instance_type = "t2.micro"
+
+  tags = {
+    Name = var.iname[count.index]
+  }
+}
+
+variable "iname" {
+  type    = list(string)
+  default = ["server-1", "server-2", "server-3"]
+}
+
+variable "ami_ids" {
+  type = list(string)
+  default = [
+    "ami-0a123456789abcd1",
+    "ami-0b123456789abcd2",
+    "ami-0c123456789abcd3"
+  ]
+}
+
