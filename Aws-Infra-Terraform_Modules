@@ -1,0 +1,413 @@
+#/root/myInfraSetup:
+
+#main.tf:
+module "instance-module" {
+  source            = "./instanceSetup"
+  publicsubnet1_id  = module.network-module.publicsubnet1_id
+  privatesubnet1_id = module.network-module.privatesubnet1_id
+  bank_sg_id        = module.sg-module.bank_sg_id
+}
+module "network-module" {
+  source = "./networkSetup"
+}
+module "sg-module" {
+  source = "./securitygroup"
+  vpc_id = module.network-module.vpc_id
+}
+module "rds-module" {
+  source            = "./rdssetup"
+  privatesubnet1_id = module.network-module.privatesubnet1_id
+  privatesubnet2_id = module.network-module.privatesubnet2_id
+  bank_sg_id        = module.sg-module.bank_sg_id
+}
+module "scaling-module" {
+  source            = "./scalingsetup"
+  bank_sg_id        = module.sg-module.bank_sg_id
+  publicsubnet1_id  = module.network-module.publicsubnet1_id
+  publicsubnet2_id  = module.network-module.publicsubnet2_id
+  privatesubnet1_id = module.network-module.privatesubnet1_id
+  privatesubnet2_id = module.network-module.privatesubnet2_id
+  privatesubnet3_id = module.network-module.privatesubnet3_id
+}
+
+#provider.tf:
+provider "aws" {
+  region = "us-east-1"
+}
+
+
+
+
+#/root/myInfraSetup/instanceSetup:
+
+#main.tf:
+variable "publicsubnet1_id" {}
+variable "privatesubnet1_id" {}
+variable "bank_sg_id" {}
+
+resource "aws_instance" "public_server" {
+  tags = {
+    Name = "Public-Server"
+  }
+
+  ami                    = "ami-0ecb62995f68bb549"
+  instance_type          = "t2.micro"
+  key_name               = "balaji-keypair"
+  subnet_id              = var.publicsubnet1_id
+  vpc_security_group_ids = [var.bank_sg_id]
+  root_block_device {
+    volume_size = 20
+  }
+}
+
+
+
+resource "aws_instance" "private_server" {
+  tags = {
+    Name = "Private-Server"
+  }
+
+  ami                    = "ami-0ecb62995f68bb549"
+  instance_type          = "t2.micro"
+  key_name               = "balaji-keypair"
+  subnet_id              = var.privatesubnet1_id
+  vpc_security_group_ids = [var.bank_sg_id]
+  root_block_device {
+    volume_size = 20
+  }
+}
+
+
+
+#/root/myInfraSetup/networkSetup:
+
+#main.tf:
+resource "aws_vpc" "bankvpc" {
+  cidr_block           = "10.0.0.0/16"
+  instance_tenancy     = "default"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags = {
+    Name = "bank-vpc"
+  }
+}
+
+resource "aws_subnet" "publicsubnet1" {
+  vpc_id                  = aws_vpc.bankvpc.id
+  cidr_block              = "10.0.0.0/25"
+  availability_zone       = "us-east-1a"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "public-subnet-1"
+  }
+}
+
+
+resource "aws_subnet" "publicsubnet2" {
+  vpc_id                  = aws_vpc.bankvpc.id
+  cidr_block              = "10.0.0.128/25"
+  availability_zone       = "us-east-1b"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "public-subnet-2"
+  }
+}
+
+resource "aws_subnet" "privatesubnet1" {
+  vpc_id            = aws_vpc.bankvpc.id
+  cidr_block        = "10.0.1.0/25"
+  availability_zone = "us-east-1a"
+
+  tags = {
+    Name = "private-subnet-1"
+  }
+}
+
+
+resource "aws_subnet" "privatesubnet2" {
+  vpc_id            = aws_vpc.bankvpc.id
+  cidr_block        = "10.0.1.128/25"
+  availability_zone = "us-east-1b"
+
+  tags = {
+    Name = "private-subnet-2"
+  }
+}
+
+resource "aws_subnet" "privatesubnet3" {
+  vpc_id            = aws_vpc.bankvpc.id
+  cidr_block        = "10.0.2.0/24"
+  availability_zone = "us-east-1c"
+
+  tags = {
+    Name = "Private-subnet-3"
+  }
+}
+
+resource "aws_internet_gateway" "bank-igw" {
+  vpc_id = aws_vpc.bankvpc.id
+
+  tags = {
+    Name = "bankvpc-igw"
+  }
+}
+
+resource "aws_eip" "nat_eip" {
+  domain = "vpc"
+
+  tags = {
+    Name = "BankNatGatewayEIP"
+  }
+}
+
+resource "aws_nat_gateway" "bank-ng" {
+  subnet_id     = aws_subnet.publicsubnet1.id
+  allocation_id = aws_eip.nat_eip.id
+
+  depends_on = [aws_internet_gateway.bank-igw]
+
+  tags = {
+    Name = "bank-natgateway"
+  }
+}
+
+resource "aws_route_table" "publicrt" {
+  vpc_id = aws_vpc.bankvpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.bank-igw.id
+  }
+
+  tags = {
+    Name = "public-rt"
+  }
+}
+
+resource "aws_route_table" "privatert" {
+  vpc_id = aws_vpc.bankvpc.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.bank-ng.id
+  }
+
+  tags = {
+    Name = "private-rt"
+  }
+}
+
+resource "aws_route_table_association" "publicsubnet1ass" {
+  subnet_id      = aws_subnet.publicsubnet1.id
+  route_table_id = aws_route_table.publicrt.id
+}
+
+
+resource "aws_route_table_association" "publicsubnet2ass" {
+  subnet_id      = aws_subnet.publicsubnet2.id
+  route_table_id = aws_route_table.publicrt.id
+}
+
+resource "aws_route_table_association" "privatesubnet1ass" {
+  subnet_id      = aws_subnet.privatesubnet1.id
+  route_table_id = aws_route_table.privatert.id
+}
+
+
+resource "aws_route_table_association" "privatesubnet2ass" {
+  subnet_id      = aws_subnet.privatesubnet2.id
+  route_table_id = aws_route_table.privatert.id
+}
+
+
+resource "aws_route_table_association" "privatesubnet3ass" {
+  subnet_id      = aws_subnet.privatesubnet3.id
+  route_table_id = aws_route_table.privatert.id
+}
+
+
+output "publicsubnet1_id" {
+  value = aws_subnet.publicsubnet1.id
+}
+
+output "publicsubnet2_id" {
+  value = aws_subnet.publicsubnet2.id
+}
+
+output "privatesubnet1_id" {
+  value = aws_subnet.privatesubnet1.id
+}
+
+output "privatesubnet2_id" {
+  value = aws_subnet.privatesubnet2.id
+}
+
+output "privatesubnet3_id" {
+  value = aws_subnet.privatesubnet3.id
+}
+
+output "vpc_id" {
+  value = aws_vpc.bankvpc.id
+}
+
+
+
+
+#/root/myInfraSetup/rdssetup
+
+
+#main.tf:
+variable "privatesubnet1_id" {}
+variable "privatesubnet2_id" {}
+variable "bank_sg_id" {}
+
+
+resource "aws_db_subnet_group" "mysql_subnet_group" {
+  name = "mysql-subnet-group"
+
+  subnet_ids = [
+    var.privatesubnet1_id,
+    var.privatesubnet2_id
+  ]
+
+  tags = {
+    Name = "mysql-subnet-group"
+  }
+}
+
+
+
+resource "aws_db_instance" "mysqldb" {
+  identifier = "mysqldb"
+
+  engine         = "mysql"
+  engine_version = "8.0"
+  instance_class = "db.t3.micro"
+
+  allocated_storage = 20
+  storage_type      = "gp2"
+
+  db_name  = "mysqldb"
+  username = "admin"
+  password = "admin123"
+
+  vpc_security_group_ids = [
+    var.bank_sg_id
+  ]
+
+  db_subnet_group_name = aws_db_subnet_group.mysql_subnet_group.name
+
+  publicly_accessible = false
+  multi_az            = false
+
+  skip_final_snapshot = true
+  deletion_protection = false
+
+  tags = {
+    Name = "mysqldb"
+  }
+}
+
+
+
+
+#/root/myInfraSetup/scalingsetup:
+
+#main.tf:
+variable "bank_sg_id" {}
+variable "publicsubnet1_id" {}
+variable "publicsubnet2_id" {}
+variable "privatesubnet1_id" {}
+variable "privatesubnet2_id" {}
+variable "privatesubnet3_id" {}
+
+resource "aws_launch_template" "banklaunchtemplate" {
+  name          = "bank-lt"
+  image_id      = "ami-06a8c52bb060aa0a7"
+  instance_type = "t2.micro"
+  key_name      = "balaji-keypair"
+
+  vpc_security_group_ids = [var.bank_sg_id]
+}
+
+resource "aws_elb" "banklb" {
+  name            = "bank-lb"
+  subnets         = [var.publicsubnet1_id, var.publicsubnet2_id]
+  security_groups = [var.bank_sg_id]
+  listener {
+    instance_port     = 80
+    instance_protocol = "http"
+    lb_port           = 80
+    lb_protocol       = "http"
+  }
+  tags = {
+    Name = "bank-lb"
+  }
+}
+
+
+resource "aws_autoscaling_group" "myasg" {
+  name = "terraform-asg"
+
+  launch_template {
+    id      = aws_launch_template.banklaunchtemplate.id
+    version = "$Latest"
+  }
+
+  min_size         = 3
+  max_size         = 6
+  desired_capacity = 3
+
+  health_check_type = "ELB"
+
+  load_balancers = [aws_elb.banklb.name]
+
+  vpc_zone_identifier = [
+    var.privatesubnet1_id,
+    var.privatesubnet2_id,
+    var.privatesubnet3_id
+  ]
+  tag {
+    key                 = "Name"
+    value               = "bank-asg-instance"
+    propagate_at_launch = true
+  }
+}
+
+
+
+
+#/root/myInfraSetup/securitygroup:
+
+#main.tf:
+variable "vpc_id" {}
+
+resource "aws_security_group" "bank_sg" {
+  name   = "bank-sg"
+  vpc_id = var.vpc_id
+
+  ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+output "bank_sg_id" {
+  value = aws_security_group.bank_sg.id
+}
+
+
+
+#
